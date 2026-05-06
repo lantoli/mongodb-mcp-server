@@ -6,31 +6,35 @@ import { ensureCurrentIpInAccessList } from "../../../common/atlas/accessListUti
 import { AtlasArgs } from "../../args.js";
 import { ClusterBodyShape } from "../clusterSchema.js";
 
-// Sensible default for a single-region dev replica set (matches hackathon-examples/replica-set-request.json):
-// AWS US_EAST_1, M10, 3 electable nodes, compute + disk autoscaling up to M40.
-// Applied only when the caller omits replicationSpecs entirely; any explicit value passes through unchanged.
-const DEFAULT_REPLICATION_SPECS = [
-    {
+// Defaults applied only when the caller omits replicationSpecs entirely.
+// Any explicit replicationSpecs passes through unchanged.
+//   REPLICASET (or unspecified) -> single AWS US_EAST_1 M10, autoscaling M10-M40 (matches hackathon-examples/replica-set-request.json).
+//   SHARDED -> two identical AWS US_EAST_1 M30 shards, autoscaling M30-M60 (matches hackathon-examples/sharded-request.json).
+function buildShard(instanceSize: string, minInstanceSize: string, maxInstanceSize: string): unknown {
+    return {
         zoneName: "Zone 1",
         regionConfigs: [
             {
                 providerName: "AWS",
                 regionName: "US_EAST_1",
                 priority: 7,
-                electableSpecs: { instanceSize: "M10", nodeCount: 3 },
+                electableSpecs: { instanceSize, nodeCount: 3 },
                 autoScaling: {
                     compute: {
                         enabled: true,
                         scaleDownEnabled: true,
-                        minInstanceSize: "M10",
-                        maxInstanceSize: "M40",
+                        minInstanceSize,
+                        maxInstanceSize,
                     },
                     diskGB: { enabled: true },
                 },
             },
         ],
-    },
-];
+    };
+}
+
+const DEFAULT_REPLICA_SET_SPECS = [buildShard("M10", "M10", "M40")];
+const DEFAULT_SHARDED_SPECS = [buildShard("M30", "M30", "M60"), buildShard("M30", "M30", "M60")];
 
 export class CreateClusterTool extends AtlasToolBase {
     static toolName = "atlas-create-cluster";
@@ -39,8 +43,9 @@ export class CreateClusterTool extends AtlasToolBase {
         "For dedicated tiers (M10+) provide replicationSpecs[].regionConfigs[] with priority: 7 on the " +
         "primary region and electableSpecs.nodeCount (typically 3). For SHARDED clusters, supply one " +
         "replicationSpecs[] entry per shard (Independent Shard Scaling format, no numShards). " +
-        "If replicationSpecs is omitted, a single-region AWS US_EAST_1 M10 replica set with compute + " +
-        "disk autoscaling (M10–M40) is used.";
+        "If replicationSpecs is omitted, a sensible default is applied: REPLICASET -> single AWS " +
+        "US_EAST_1 M10 with compute + disk autoscaling (M10-M40); SHARDED -> two AWS US_EAST_1 M30 " +
+        "shards with autoscaling (M30-M60).";
     static operationType: OperationType = "create";
 
     public argsShape = {
@@ -51,7 +56,8 @@ export class CreateClusterTool extends AtlasToolBase {
     protected async execute(args: ToolArgs<typeof this.argsShape>): Promise<CallToolResult> {
         const { projectId, ...body } = args;
         if (!body.replicationSpecs || body.replicationSpecs.length === 0) {
-            body.replicationSpecs = DEFAULT_REPLICATION_SPECS as unknown as typeof body.replicationSpecs;
+            const defaults = body.clusterType === "SHARDED" ? DEFAULT_SHARDED_SPECS : DEFAULT_REPLICA_SET_SPECS;
+            body.replicationSpecs = defaults as unknown as typeof body.replicationSpecs;
         }
         await ensureCurrentIpInAccessList(this.apiClient, projectId);
         const cluster = await this.apiClient.createCluster({
