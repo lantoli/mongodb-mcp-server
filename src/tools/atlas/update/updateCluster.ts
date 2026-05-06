@@ -7,9 +7,10 @@ import { ClusterBodyShape } from "../clusterSchema.js";
 export class UpdateClusterTool extends AtlasToolBase {
     static toolName = "atlas-update-cluster";
     public description =
-        "Update a MongoDB Atlas cluster. Pass any subset of fields to change " +
-        "(e.g. { paused: true } to pause, modified replicationSpecs to scale tier or change autoscaling). " +
-        "The cluster must be in IDLE state, call atlas-get-cluster first to verify.";
+        "Update a MongoDB Atlas cluster. Pass any subset of fields to change. " +
+        "Pause: { paused: true }. Resume: { paused: false }. Scale tier or change autoscaling: " +
+        "modified replicationSpecs. Atlas rejects updates unless the cluster is IDLE, so call " +
+        "atlas-get-cluster first and only call this tool once stateName == 'IDLE'.";
     static operationType: OperationType = "update";
 
     public argsShape = {

@@ -69,9 +69,22 @@ export const ClusterBodyShape = {
         .describe(
             "One entry per shard for SHARDED clusters (Independent Shard Scaling format, no numShards). One entry for REPLICASET."
         ),
-    backupEnabled: z.boolean().optional(),
-    pitEnabled: z.boolean().optional(),
-    paused: z.boolean().optional().describe("Set to true to pause an IDLE cluster; false to resume."),
+    backupEnabled: z
+        .boolean()
+        .optional()
+        .describe(
+            "Daily snapshot backups. Defaults to false. Set to true for any production cluster (required for PITR audit / disaster recovery)."
+        ),
+    pitEnabled: z
+        .boolean()
+        .optional()
+        .describe("Continuous (point-in-time) backups. Requires backupEnabled: true."),
+    paused: z
+        .boolean()
+        .optional()
+        .describe(
+            "Set to true to pause an IDLE cluster; false to resume. Atlas rejects pause unless stateName is IDLE, so call atlas-get-cluster first."
+        ),
     terminationProtectionEnabled: z.boolean().optional(),
     mongoDBMajorVersion: z.string().optional(),
     encryptionAtRestProvider: z.enum(["NONE", "AWS", "AZURE", "GCP"]).optional(),

@@ -40,12 +40,19 @@ export class CreateClusterTool extends AtlasToolBase {
     static toolName = "atlas-create-cluster";
     public description =
         "Create a MongoDB Atlas cluster. The body mirrors the Atlas API ClusterDescription schema. " +
-        "For dedicated tiers (M10+) provide replicationSpecs[].regionConfigs[] with priority: 7 on the " +
-        "primary region and electableSpecs.nodeCount (typically 3). For SHARDED clusters, supply one " +
-        "replicationSpecs[] entry per shard (Independent Shard Scaling format, no numShards). " +
-        "If replicationSpecs is omitted, a sensible default is applied: REPLICASET -> single AWS " +
-        "US_EAST_1 M10 with compute + disk autoscaling (M10-M40); SHARDED -> two AWS US_EAST_1 M30 " +
-        "shards with autoscaling (M30-M60).";
+        "Pass replicationSpecs[] explicitly for any non-trivial sizing; the defaults below are dev-only. " +
+        "Sizing rules: dev = M10/M20 (cheapest with autoscaling). Production = M30+. Always set " +
+        "priority: 7 on the primary region and electableSpecs.nodeCount: 3. " +
+        "Single-region: 1 replicationSpec with 1 regionConfig. " +
+        "Multi-region HA: 1 replicationSpec with 3+ regionConfigs (electable nodes in each, totalling >=5). " +
+        "Sharded: 1 replicationSpec per shard (Independent Shard Scaling format, no numShards). " +
+        "Always set autoScaling.compute and autoScaling.diskGB on every regionConfig. " +
+        "For production set backupEnabled: true. " +
+        "To pause after creation: poll atlas-get-cluster until stateName=='IDLE', then call " +
+        "atlas-update-cluster with { paused: true }. " +
+        "Defaults when replicationSpecs is omitted (DEV ONLY, not production): " +
+        "REPLICASET -> single AWS US_EAST_1 M10 with autoscaling (M10-M40); " +
+        "SHARDED -> two AWS US_EAST_1 M30 shards with autoscaling (M30-M60).";
     static operationType: OperationType = "create";
 
     public argsShape = {
