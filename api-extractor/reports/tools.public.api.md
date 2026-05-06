@@ -4,6 +4,8 @@
 
 ```ts
 
+import { $loose } from 'zod/v4/core';
+import { $strip } from 'zod/v4/core';
 import type { AggregationCursor } from 'mongodb';
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import type { Client } from '@mongodb-js/atlas-local';
@@ -27,8 +29,12 @@ import type { TelemetryEvents } from '@mongodb-js/mcp-types';
 import type { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { z } from 'zod';
+import { ZodArray } from 'zod';
+import { ZodBoolean } from 'zod';
 import { ZodDefault } from 'zod';
 import { ZodEnum } from 'zod';
+import { ZodNumber } from 'zod';
+import { ZodObject } from 'zod';
 import { ZodOptional } from 'zod';
 import type { ZodRawShape } from 'zod';
 import { ZodRecord } from 'zod';
@@ -318,6 +324,109 @@ export class CreateAccessListTool extends AtlasToolBase {
     static toolName: string;
 }
 
+// @public (undocumented)
+export class CreateClusterTool extends AtlasToolBase {
+    // (undocumented)
+    argsShape: {
+        name: ZodOptional<ZodString>;
+        clusterType: ZodOptional<ZodEnum<    {
+        REPLICASET: "REPLICASET";
+        SHARDED: "SHARDED";
+        GEOSHARDED: "GEOSHARDED";
+        }>>;
+        replicationSpecs: ZodOptional<ZodArray<ZodObject<    {
+        zoneName: ZodDefault<ZodOptional<ZodString>>;
+        regionConfigs: ZodArray<ZodObject<    {
+        providerName: ZodEnum<    {
+        AWS: "AWS";
+        AZURE: "AZURE";
+        GCP: "GCP";
+        TENANT: "TENANT";
+        }>;
+        backingProviderName: ZodOptional<ZodEnum<    {
+        AWS: "AWS";
+        AZURE: "AZURE";
+        GCP: "GCP";
+        }>>;
+        regionName: ZodString;
+        priority: ZodOptional<ZodNumber>;
+        electableSpecs: ZodOptional<ZodObject<    {
+        instanceSize: ZodString;
+        nodeCount: ZodOptional<ZodNumber>;
+        diskSizeGB: ZodOptional<ZodNumber>;
+        diskIOPS: ZodOptional<ZodNumber>;
+        ebsVolumeType: ZodOptional<ZodString>;
+        }, $loose>>;
+        readOnlySpecs: ZodOptional<ZodObject<    {
+        instanceSize: ZodString;
+        nodeCount: ZodOptional<ZodNumber>;
+        diskSizeGB: ZodOptional<ZodNumber>;
+        diskIOPS: ZodOptional<ZodNumber>;
+        ebsVolumeType: ZodOptional<ZodString>;
+        }, $loose>>;
+        analyticsSpecs: ZodOptional<ZodObject<    {
+        instanceSize: ZodString;
+        nodeCount: ZodOptional<ZodNumber>;
+        diskSizeGB: ZodOptional<ZodNumber>;
+        diskIOPS: ZodOptional<ZodNumber>;
+        ebsVolumeType: ZodOptional<ZodString>;
+        }, $loose>>;
+        autoScaling: ZodOptional<ZodObject<    {
+        compute: ZodOptional<ZodObject<    {
+        enabled: ZodOptional<ZodBoolean>;
+        scaleDownEnabled: ZodOptional<ZodBoolean>;
+        minInstanceSize: ZodOptional<ZodString>;
+        maxInstanceSize: ZodOptional<ZodString>;
+        }, $loose>>;
+        diskGB: ZodOptional<ZodObject<    {
+        enabled: ZodOptional<ZodBoolean>;
+        }, $loose>>;
+        }, $loose>>;
+        analyticsAutoScaling: ZodOptional<ZodObject<    {
+        compute: ZodOptional<ZodObject<    {
+        enabled: ZodOptional<ZodBoolean>;
+        scaleDownEnabled: ZodOptional<ZodBoolean>;
+        minInstanceSize: ZodOptional<ZodString>;
+        maxInstanceSize: ZodOptional<ZodString>;
+        }, $loose>>;
+        diskGB: ZodOptional<ZodObject<    {
+        enabled: ZodOptional<ZodBoolean>;
+        }, $loose>>;
+        }, $loose>>;
+        }, $loose>>;
+        }, $loose>>>;
+        backupEnabled: ZodOptional<ZodBoolean>;
+        pitEnabled: ZodOptional<ZodBoolean>;
+        paused: ZodOptional<ZodBoolean>;
+        terminationProtectionEnabled: ZodOptional<ZodBoolean>;
+        mongoDBMajorVersion: ZodOptional<ZodString>;
+        encryptionAtRestProvider: ZodOptional<ZodEnum<    {
+        NONE: "NONE";
+        AWS: "AWS";
+        AZURE: "AZURE";
+        GCP: "GCP";
+        }>>;
+        replicaSetScalingStrategy: ZodOptional<ZodEnum<    {
+        SEQUENTIAL: "SEQUENTIAL";
+        WORKLOAD_TYPE: "WORKLOAD_TYPE";
+        NODE_TYPE: "NODE_TYPE";
+        }>>;
+        tags: ZodOptional<ZodArray<ZodObject<    {
+        key: ZodString;
+        value: ZodString;
+        }, $strip>>>;
+        projectId: ZodString;
+    };
+    // (undocumented)
+    description: string;
+    // (undocumented)
+    protected execute(args: ToolArgs<typeof CreateClusterTool.argsShape>): Promise<CallToolResult>;
+    // (undocumented)
+    static operationType: OperationType;
+    // (undocumented)
+    static toolName: string;
+}
+
 // Warning: (ae-forgotten-export) The symbol "CreateCollectionOutputSchema" needs to be exported by the entry point index.d.ts
 //
 // @public (undocumented)
@@ -540,6 +649,23 @@ export class DbStatsTool extends MongoDBToolBase {
     outputSchema: {
         stats: z.ZodRecord<z.ZodString, z.ZodUnknown>;
     };
+    // (undocumented)
+    static toolName: string;
+}
+
+// @public (undocumented)
+export class DeleteClusterTool extends AtlasToolBase {
+    // (undocumented)
+    argsShape: {
+        projectId: ZodString;
+        clusterName: ZodString;
+    };
+    // (undocumented)
+    description: string;
+    // (undocumented)
+    protected execute(input: ToolArgs<typeof DeleteClusterTool.argsShape>): Promise<CallToolResult>;
+    // (undocumented)
+    static operationType: OperationType;
     // (undocumented)
     static toolName: string;
 }
@@ -850,6 +976,23 @@ export class FindTool extends MongoDBToolBase {
     description: string;
     // (undocumented)
     protected execute(input: ToolArgs<typeof FindTool.argsShape>, input2: ToolExecutionContext): Promise<CallToolResult>;
+    // (undocumented)
+    static operationType: OperationType;
+    // (undocumented)
+    static toolName: string;
+}
+
+// @public (undocumented)
+export class GetClusterTool extends AtlasToolBase {
+    // (undocumented)
+    argsShape: {
+        projectId: ZodString;
+        clusterName: ZodString;
+    };
+    // (undocumented)
+    description: string;
+    // (undocumented)
+    protected execute(input: ToolArgs<typeof GetClusterTool.argsShape>): Promise<CallToolResult>;
     // (undocumented)
     static operationType: OperationType;
     // (undocumented)
@@ -1646,6 +1789,110 @@ export type ToolResult<OutputSchema extends ZodRawShape | undefined = undefined>
     }[];
     isError?: boolean;
 };
+
+// @public (undocumented)
+export class UpdateClusterTool extends AtlasToolBase {
+    // (undocumented)
+    argsShape: {
+        name: ZodOptional<ZodString>;
+        clusterType: ZodOptional<ZodEnum<    {
+        REPLICASET: "REPLICASET";
+        SHARDED: "SHARDED";
+        GEOSHARDED: "GEOSHARDED";
+        }>>;
+        replicationSpecs: ZodOptional<ZodArray<ZodObject<    {
+        zoneName: ZodDefault<ZodOptional<ZodString>>;
+        regionConfigs: ZodArray<ZodObject<    {
+        providerName: ZodEnum<    {
+        AWS: "AWS";
+        AZURE: "AZURE";
+        GCP: "GCP";
+        TENANT: "TENANT";
+        }>;
+        backingProviderName: ZodOptional<ZodEnum<    {
+        AWS: "AWS";
+        AZURE: "AZURE";
+        GCP: "GCP";
+        }>>;
+        regionName: ZodString;
+        priority: ZodOptional<ZodNumber>;
+        electableSpecs: ZodOptional<ZodObject<    {
+        instanceSize: ZodString;
+        nodeCount: ZodOptional<ZodNumber>;
+        diskSizeGB: ZodOptional<ZodNumber>;
+        diskIOPS: ZodOptional<ZodNumber>;
+        ebsVolumeType: ZodOptional<ZodString>;
+        }, $loose>>;
+        readOnlySpecs: ZodOptional<ZodObject<    {
+        instanceSize: ZodString;
+        nodeCount: ZodOptional<ZodNumber>;
+        diskSizeGB: ZodOptional<ZodNumber>;
+        diskIOPS: ZodOptional<ZodNumber>;
+        ebsVolumeType: ZodOptional<ZodString>;
+        }, $loose>>;
+        analyticsSpecs: ZodOptional<ZodObject<    {
+        instanceSize: ZodString;
+        nodeCount: ZodOptional<ZodNumber>;
+        diskSizeGB: ZodOptional<ZodNumber>;
+        diskIOPS: ZodOptional<ZodNumber>;
+        ebsVolumeType: ZodOptional<ZodString>;
+        }, $loose>>;
+        autoScaling: ZodOptional<ZodObject<    {
+        compute: ZodOptional<ZodObject<    {
+        enabled: ZodOptional<ZodBoolean>;
+        scaleDownEnabled: ZodOptional<ZodBoolean>;
+        minInstanceSize: ZodOptional<ZodString>;
+        maxInstanceSize: ZodOptional<ZodString>;
+        }, $loose>>;
+        diskGB: ZodOptional<ZodObject<    {
+        enabled: ZodOptional<ZodBoolean>;
+        }, $loose>>;
+        }, $loose>>;
+        analyticsAutoScaling: ZodOptional<ZodObject<    {
+        compute: ZodOptional<ZodObject<    {
+        enabled: ZodOptional<ZodBoolean>;
+        scaleDownEnabled: ZodOptional<ZodBoolean>;
+        minInstanceSize: ZodOptional<ZodString>;
+        maxInstanceSize: ZodOptional<ZodString>;
+        }, $loose>>;
+        diskGB: ZodOptional<ZodObject<    {
+        enabled: ZodOptional<ZodBoolean>;
+        }, $loose>>;
+        }, $loose>>;
+        }, $loose>>;
+        }, $loose>>>;
+        backupEnabled: ZodOptional<ZodBoolean>;
+        pitEnabled: ZodOptional<ZodBoolean>;
+        paused: ZodOptional<ZodBoolean>;
+        terminationProtectionEnabled: ZodOptional<ZodBoolean>;
+        mongoDBMajorVersion: ZodOptional<ZodString>;
+        encryptionAtRestProvider: ZodOptional<ZodEnum<    {
+        NONE: "NONE";
+        AWS: "AWS";
+        AZURE: "AZURE";
+        GCP: "GCP";
+        }>>;
+        replicaSetScalingStrategy: ZodOptional<ZodEnum<    {
+        SEQUENTIAL: "SEQUENTIAL";
+        WORKLOAD_TYPE: "WORKLOAD_TYPE";
+        NODE_TYPE: "NODE_TYPE";
+        }>>;
+        tags: ZodOptional<ZodArray<ZodObject<    {
+        key: ZodString;
+        value: ZodString;
+        }, $strip>>>;
+        projectId: ZodString;
+        clusterName: ZodString;
+    };
+    // (undocumented)
+    description: string;
+    // (undocumented)
+    protected execute(args: ToolArgs<typeof UpdateClusterTool.argsShape>): Promise<CallToolResult>;
+    // (undocumented)
+    static operationType: OperationType;
+    // (undocumented)
+    static toolName: string;
+}
 
 // Warning: (ae-forgotten-export) The symbol "UpdateManyOutputSchema" needs to be exported by the entry point index.d.ts
 //

@@ -30,6 +30,7 @@ const expectedDefaults = {
     confirmationRequiredTools: [
         "atlas-create-access-list",
         "atlas-create-db-user",
+        "atlas-delete-cluster",
         "drop-database",
         "drop-collection",
         "delete-many",

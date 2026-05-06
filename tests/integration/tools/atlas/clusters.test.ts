@@ -91,6 +91,77 @@ describeWithAtlas("clusters", (integration) => {
             });
         });
 
+        describe("atlas-create-cluster", () => {
+            it("should have correct metadata", async () => {
+                const { tools } = await integration.mcpClient().listTools();
+                const createCluster = tools.find((tool) => tool.name === "atlas-create-cluster");
+
+                expectDefined(createCluster);
+                expect(createCluster.inputSchema.type).toBe("object");
+                expectDefined(createCluster.inputSchema.properties);
+                expect(createCluster.inputSchema.properties).toHaveProperty("projectId");
+                expect(createCluster.inputSchema.properties).toHaveProperty("name");
+                expect(createCluster.inputSchema.properties).toHaveProperty("clusterType");
+                expect(createCluster.inputSchema.properties).toHaveProperty("replicationSpecs");
+                expect(createCluster.inputSchema.properties).toHaveProperty("backupEnabled");
+                expect(createCluster.inputSchema.properties).toHaveProperty("paused");
+            });
+        });
+
+        describe("atlas-update-cluster", () => {
+            it("should have correct metadata", async () => {
+                const { tools } = await integration.mcpClient().listTools();
+                const updateCluster = tools.find((tool) => tool.name === "atlas-update-cluster");
+
+                expectDefined(updateCluster);
+                expect(updateCluster.inputSchema.type).toBe("object");
+                expectDefined(updateCluster.inputSchema.properties);
+                expect(updateCluster.inputSchema.properties).toHaveProperty("projectId");
+                expect(updateCluster.inputSchema.properties).toHaveProperty("clusterName");
+                expect(updateCluster.inputSchema.properties).toHaveProperty("paused");
+                expect(updateCluster.inputSchema.properties).toHaveProperty("replicationSpecs");
+            });
+        });
+
+        describe("atlas-get-cluster", () => {
+            it("should have correct metadata", async () => {
+                const { tools } = await integration.mcpClient().listTools();
+                const getCluster = tools.find((tool) => tool.name === "atlas-get-cluster");
+
+                expectDefined(getCluster);
+                expect(getCluster.inputSchema.type).toBe("object");
+                expectDefined(getCluster.inputSchema.properties);
+                expect(getCluster.inputSchema.properties).toHaveProperty("projectId");
+                expect(getCluster.inputSchema.properties).toHaveProperty("clusterName");
+            });
+
+            it("returns full cluster JSON", async () => {
+                const projectId = getProjectId();
+
+                const response = await integration.mcpClient().callTool({
+                    name: "atlas-get-cluster",
+                    arguments: { projectId, clusterName },
+                });
+                const content = getResponseContent(response.content);
+                const parsed = JSON.parse(content) as { name?: string; replicationSpecs?: unknown };
+                expect(parsed.name).toBe(clusterName);
+                expectDefined(parsed.replicationSpecs);
+            });
+        });
+
+        describe("atlas-delete-cluster", () => {
+            it("should have correct metadata", async () => {
+                const { tools } = await integration.mcpClient().listTools();
+                const deleteClusterTool = tools.find((tool) => tool.name === "atlas-delete-cluster");
+
+                expectDefined(deleteClusterTool);
+                expect(deleteClusterTool.inputSchema.type).toBe("object");
+                expectDefined(deleteClusterTool.inputSchema.properties);
+                expect(deleteClusterTool.inputSchema.properties).toHaveProperty("projectId");
+                expect(deleteClusterTool.inputSchema.properties).toHaveProperty("clusterName");
+            });
+        });
+
         describe("atlas-list-clusters", () => {
             it("should have correct metadata", async () => {
                 const { tools } = await integration.mcpClient().listTools();

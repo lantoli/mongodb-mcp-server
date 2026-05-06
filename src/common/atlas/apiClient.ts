@@ -366,6 +366,34 @@ export class ApiClient {
         return data;
     }
 
+    // The pinned ATLAS_API_VERSION (2025-03-12) doesn't expose PATCH on this path,
+    // so cast around the typed-paths constraint and pin Accept to the 2024-08-05 handler.
+    async updateCluster(options: {
+        params: { path: { groupId: string; clusterName: string } };
+        body: Partial<components["schemas"]["ClusterDescription20240805"]>;
+    }): Promise<components["schemas"]["ClusterDescription20240805"]> {
+        const patch = (
+            this.client as unknown as {
+                PATCH: (
+                    path: string,
+                    init: unknown
+                ) => Promise<{
+                    data?: components["schemas"]["ClusterDescription20240805"];
+                    error?: Parameters<typeof ApiClientError.fromError>[1];
+                    response: Response;
+                }>;
+            }
+        ).PATCH;
+        const { data, error, response } = await patch("/api/atlas/v2/groups/{groupId}/clusters/{clusterName}", {
+            ...options,
+            headers: { Accept: "application/vnd.atlas.2024-08-05+json" },
+        });
+        if (error) {
+            throw ApiClientError.fromError(response, error);
+        }
+        return data as components["schemas"]["ClusterDescription20240805"];
+    }
+
     async listDropIndexSuggestions(
         options: FetchOptions<operations["listGroupClusterPerformanceAdvisorDropIndexSuggestions"]>
     ): Promise<components["schemas"]["DropIndexSuggestionsResponse"]> {
