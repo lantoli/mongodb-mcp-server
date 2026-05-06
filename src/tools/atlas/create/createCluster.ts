@@ -6,6 +6,25 @@ import { ensureCurrentIpInAccessList } from "../../../common/atlas/accessListUti
 import { AtlasArgs } from "../../args.js";
 import { ClusterBodyShape } from "../clusterSchema.js";
 
+const HA_EXAMPLE = `Multi-region HA example (1 replicationSpec, 3 regionConfigs, 7 electable nodes total):
+{
+  "clusterType": "REPLICASET",
+  "backupEnabled": true,
+  "replicationSpecs": [{
+    "regionConfigs": [
+      { "providerName": "AWS", "regionName": "US_EAST_1", "priority": 7,
+        "electableSpecs": { "instanceSize": "M30", "nodeCount": 3 },
+        "autoScaling": { "compute": { "enabled": true, "scaleDownEnabled": true, "minInstanceSize": "M30", "maxInstanceSize": "M60" }, "diskGB": { "enabled": true } } },
+      { "providerName": "AWS", "regionName": "US_WEST_2", "priority": 6,
+        "electableSpecs": { "instanceSize": "M30", "nodeCount": 2 },
+        "autoScaling": { "compute": { "enabled": true, "scaleDownEnabled": true, "minInstanceSize": "M30", "maxInstanceSize": "M60" }, "diskGB": { "enabled": true } } },
+      { "providerName": "AWS", "regionName": "US_EAST_2", "priority": 5,
+        "electableSpecs": { "instanceSize": "M30", "nodeCount": 2 },
+        "autoScaling": { "compute": { "enabled": true, "scaleDownEnabled": true, "minInstanceSize": "M30", "maxInstanceSize": "M60" }, "diskGB": { "enabled": true } } }
+    ]
+  }]
+}`;
+
 // Defaults applied only when the caller omits replicationSpecs entirely.
 // Any explicit replicationSpecs passes through unchanged.
 //   REPLICASET (or unspecified) -> single AWS US_EAST_1 M10, autoscaling M10-M40 (matches hackathon-examples/replica-set-request.json).
@@ -42,22 +61,25 @@ export class CreateClusterTool extends AtlasToolBase {
         "Create a MongoDB Atlas cluster. The body mirrors the Atlas API ClusterDescription schema. " +
         "Pass replicationSpecs[] explicitly for any non-trivial sizing; the defaults below are dev-only. " +
         "Sizing rules: dev = M10/M20 (cheapest with autoscaling). Production = M30+. Always set " +
-        "priority: 7 on the primary region and electableSpecs.nodeCount: 3. " +
+        "electableSpecs.nodeCount: 3 on the primary region; total electable count across regions must be odd (3, 5, 7) for replica-set quorum. " +
+        "priority: use 7 on the PRIMARY region ONLY; secondary regions need lower distinct values (6, 5, ...). " +
         "Single-region: 1 replicationSpec with 1 regionConfig. " +
-        "Multi-region HA: 1 replicationSpec with 3+ regionConfigs (electable nodes in each, totalling >=5). " +
+        "Multi-region HA: 1 replicationSpec with 3+ regionConfigs, electable nodes in EACH region (>=5 total). " +
         "Sharded: 1 replicationSpec per shard (Independent Shard Scaling format, no numShards). " +
         "Always set autoScaling.compute and autoScaling.diskGB on every regionConfig. " +
         "For production set backupEnabled: true. " +
-        "To pause after creation: poll atlas-get-cluster until stateName=='IDLE', then call " +
-        "atlas-update-cluster with { paused: true }. " +
+        "To pause after creation: poll atlas-get-cluster until stateName=='IDLE' (cluster build takes a few minutes), then call atlas-update-cluster with { paused: true }. " +
         "Defaults when replicationSpecs is omitted (DEV ONLY, not production): " +
         "REPLICASET -> single AWS US_EAST_1 M10 with autoscaling (M10-M40); " +
-        "SHARDED -> two AWS US_EAST_1 M30 shards with autoscaling (M30-M60).";
+        "SHARDED -> two AWS US_EAST_1 M30 shards with autoscaling (M30-M60).\n\n" +
+        HA_EXAMPLE;
     static operationType: OperationType = "create";
 
     public argsShape = {
         projectId: AtlasArgs.projectId().describe("Atlas project ID to create the cluster in"),
         ...ClusterBodyShape,
+        // Atlas requires a cluster name on create; override the shared (optional) shape.
+        name: AtlasArgs.clusterName().describe("Name of the cluster (required)"),
     };
 
     protected async execute(args: ToolArgs<typeof this.argsShape>): Promise<CallToolResult> {

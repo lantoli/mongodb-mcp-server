@@ -3,6 +3,7 @@ import { type ToolArgs, type OperationType } from "../../tool.js";
 import { AtlasToolBase } from "../atlasTool.js";
 import { AtlasArgs } from "../../args.js";
 import { ClusterBodyShape } from "../clusterSchema.js";
+import { ApiClientError } from "../../../common/atlas/apiClientError.js";
 
 export class UpdateClusterTool extends AtlasToolBase {
     static toolName = "atlas-update-cluster";
@@ -33,5 +34,31 @@ export class UpdateClusterTool extends AtlasToolBase {
                 { type: "text", text: JSON.stringify(updated, null, 2) },
             ],
         };
+    }
+
+    protected handleError(
+        error: unknown,
+        args: ToolArgs<typeof this.argsShape>
+    ): Promise<CallToolResult> | CallToolResult {
+        if (
+            error instanceof ApiClientError &&
+            args.paused !== undefined &&
+            /CANNOT_UPDATE_PAUSED_CLUSTER|cluster.*not.*idle|currently.*(creating|updating|deleting)|in this state/i.test(
+                error.message
+            )
+        ) {
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text:
+                            `Atlas rejected the pause/resume because cluster "${args.clusterName}" is not IDLE: ${error.message}. ` +
+                            `Call atlas-get-cluster and wait until stateName === "IDLE" (cluster build/transition typically takes a few minutes), then retry this update.`,
+                    },
+                ],
+                isError: true,
+            };
+        }
+        return super.handleError(error, args);
     }
 }

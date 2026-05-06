@@ -44,7 +44,11 @@ const RegionConfigSchema = z
             .min(0)
             .max(7)
             .optional()
-            .describe("7 marks the primary region; required for dedicated tiers."),
+            .describe(
+                "Election priority. Required for dedicated tiers. Use 7 on the PRIMARY region ONLY. " +
+                    "Secondary regions must use lower, distinct values (e.g. 6, 5, 4). Setting priority: 7 " +
+                    "on more than one region returns HTTP 400 from Atlas."
+            ),
         electableSpecs: InstanceSpecsSchema.optional(),
         readOnlySpecs: InstanceSpecsSchema.optional(),
         analyticsSpecs: InstanceSpecsSchema.optional(),

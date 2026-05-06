@@ -328,7 +328,7 @@ export class CreateAccessListTool extends AtlasToolBase {
 export class CreateClusterTool extends AtlasToolBase {
     // (undocumented)
     argsShape: {
-        name: ZodOptional<ZodString>;
+        name: ZodString;
         clusterType: ZodOptional<ZodEnum<    {
         REPLICASET: "REPLICASET";
         SHARDED: "SHARDED";
@@ -1888,6 +1888,8 @@ export class UpdateClusterTool extends AtlasToolBase {
     description: string;
     // (undocumented)
     protected execute(args: ToolArgs<typeof UpdateClusterTool.argsShape>): Promise<CallToolResult>;
+    // (undocumented)
+    protected handleError(error: unknown, args: ToolArgs<typeof UpdateClusterTool.argsShape>): Promise<CallToolResult> | CallToolResult;
     // (undocumented)
     static operationType: OperationType;
     // (undocumented)
