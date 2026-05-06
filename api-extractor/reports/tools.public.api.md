@@ -1794,95 +1794,96 @@ export type ToolResult<OutputSchema extends ZodRawShape | undefined = undefined>
 export class UpdateClusterTool extends AtlasToolBase {
     // (undocumented)
     argsShape: {
-        name: ZodOptional<ZodString>;
-        clusterType: ZodOptional<ZodEnum<    {
-        REPLICASET: "REPLICASET";
-        SHARDED: "SHARDED";
-        GEOSHARDED: "GEOSHARDED";
+        waitTimeoutSeconds: z.ZodOptional<z.ZodNumber>;
+        name: z.ZodOptional<z.ZodString>;
+        clusterType: z.ZodOptional<z.ZodEnum<{
+            REPLICASET: "REPLICASET";
+            SHARDED: "SHARDED";
+            GEOSHARDED: "GEOSHARDED";
         }>>;
-        replicationSpecs: ZodOptional<ZodArray<ZodObject<    {
-        zoneName: ZodDefault<ZodOptional<ZodString>>;
-        regionConfigs: ZodArray<ZodObject<    {
-        providerName: ZodEnum<    {
-        AWS: "AWS";
-        AZURE: "AZURE";
-        GCP: "GCP";
-        TENANT: "TENANT";
-        }>;
-        backingProviderName: ZodOptional<ZodEnum<    {
-        AWS: "AWS";
-        AZURE: "AZURE";
-        GCP: "GCP";
+        replicationSpecs: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            zoneName: z.ZodDefault<z.ZodOptional<z.ZodString>>;
+            regionConfigs: z.ZodArray<z.ZodObject<{
+                providerName: z.ZodEnum<{
+                    AWS: "AWS";
+                    AZURE: "AZURE";
+                    GCP: "GCP";
+                    TENANT: "TENANT";
+                }>;
+                backingProviderName: z.ZodOptional<z.ZodEnum<{
+                    AWS: "AWS";
+                    AZURE: "AZURE";
+                    GCP: "GCP";
+                }>>;
+                regionName: z.ZodString;
+                priority: z.ZodOptional<z.ZodNumber>;
+                electableSpecs: z.ZodOptional<z.ZodObject<{
+                    instanceSize: z.ZodString;
+                    nodeCount: z.ZodOptional<z.ZodNumber>;
+                    diskSizeGB: z.ZodOptional<z.ZodNumber>;
+                    diskIOPS: z.ZodOptional<z.ZodNumber>;
+                    ebsVolumeType: z.ZodOptional<z.ZodString>;
+                }, z.core.$loose>>;
+                readOnlySpecs: z.ZodOptional<z.ZodObject<{
+                    instanceSize: z.ZodString;
+                    nodeCount: z.ZodOptional<z.ZodNumber>;
+                    diskSizeGB: z.ZodOptional<z.ZodNumber>;
+                    diskIOPS: z.ZodOptional<z.ZodNumber>;
+                    ebsVolumeType: z.ZodOptional<z.ZodString>;
+                }, z.core.$loose>>;
+                analyticsSpecs: z.ZodOptional<z.ZodObject<{
+                    instanceSize: z.ZodString;
+                    nodeCount: z.ZodOptional<z.ZodNumber>;
+                    diskSizeGB: z.ZodOptional<z.ZodNumber>;
+                    diskIOPS: z.ZodOptional<z.ZodNumber>;
+                    ebsVolumeType: z.ZodOptional<z.ZodString>;
+                }, z.core.$loose>>;
+                autoScaling: z.ZodOptional<z.ZodObject<{
+                    compute: z.ZodOptional<z.ZodObject<{
+                        enabled: z.ZodOptional<z.ZodBoolean>;
+                        scaleDownEnabled: z.ZodOptional<z.ZodBoolean>;
+                        minInstanceSize: z.ZodOptional<z.ZodString>;
+                        maxInstanceSize: z.ZodOptional<z.ZodString>;
+                    }, z.core.$loose>>;
+                    diskGB: z.ZodOptional<z.ZodObject<{
+                        enabled: z.ZodOptional<z.ZodBoolean>;
+                    }, z.core.$loose>>;
+                }, z.core.$loose>>;
+                analyticsAutoScaling: z.ZodOptional<z.ZodObject<{
+                    compute: z.ZodOptional<z.ZodObject<{
+                        enabled: z.ZodOptional<z.ZodBoolean>;
+                        scaleDownEnabled: z.ZodOptional<z.ZodBoolean>;
+                        minInstanceSize: z.ZodOptional<z.ZodString>;
+                        maxInstanceSize: z.ZodOptional<z.ZodString>;
+                    }, z.core.$loose>>;
+                    diskGB: z.ZodOptional<z.ZodObject<{
+                        enabled: z.ZodOptional<z.ZodBoolean>;
+                    }, z.core.$loose>>;
+                }, z.core.$loose>>;
+            }, z.core.$loose>>;
+        }, z.core.$loose>>>;
+        backupEnabled: z.ZodOptional<z.ZodBoolean>;
+        pitEnabled: z.ZodOptional<z.ZodBoolean>;
+        paused: z.ZodOptional<z.ZodBoolean>;
+        terminationProtectionEnabled: z.ZodOptional<z.ZodBoolean>;
+        mongoDBMajorVersion: z.ZodOptional<z.ZodString>;
+        encryptionAtRestProvider: z.ZodOptional<z.ZodEnum<{
+            NONE: "NONE";
+            AWS: "AWS";
+            AZURE: "AZURE";
+            GCP: "GCP";
         }>>;
-        regionName: ZodString;
-        priority: ZodOptional<ZodNumber>;
-        electableSpecs: ZodOptional<ZodObject<    {
-        instanceSize: ZodString;
-        nodeCount: ZodOptional<ZodNumber>;
-        diskSizeGB: ZodOptional<ZodNumber>;
-        diskIOPS: ZodOptional<ZodNumber>;
-        ebsVolumeType: ZodOptional<ZodString>;
-        }, $loose>>;
-        readOnlySpecs: ZodOptional<ZodObject<    {
-        instanceSize: ZodString;
-        nodeCount: ZodOptional<ZodNumber>;
-        diskSizeGB: ZodOptional<ZodNumber>;
-        diskIOPS: ZodOptional<ZodNumber>;
-        ebsVolumeType: ZodOptional<ZodString>;
-        }, $loose>>;
-        analyticsSpecs: ZodOptional<ZodObject<    {
-        instanceSize: ZodString;
-        nodeCount: ZodOptional<ZodNumber>;
-        diskSizeGB: ZodOptional<ZodNumber>;
-        diskIOPS: ZodOptional<ZodNumber>;
-        ebsVolumeType: ZodOptional<ZodString>;
-        }, $loose>>;
-        autoScaling: ZodOptional<ZodObject<    {
-        compute: ZodOptional<ZodObject<    {
-        enabled: ZodOptional<ZodBoolean>;
-        scaleDownEnabled: ZodOptional<ZodBoolean>;
-        minInstanceSize: ZodOptional<ZodString>;
-        maxInstanceSize: ZodOptional<ZodString>;
-        }, $loose>>;
-        diskGB: ZodOptional<ZodObject<    {
-        enabled: ZodOptional<ZodBoolean>;
-        }, $loose>>;
-        }, $loose>>;
-        analyticsAutoScaling: ZodOptional<ZodObject<    {
-        compute: ZodOptional<ZodObject<    {
-        enabled: ZodOptional<ZodBoolean>;
-        scaleDownEnabled: ZodOptional<ZodBoolean>;
-        minInstanceSize: ZodOptional<ZodString>;
-        maxInstanceSize: ZodOptional<ZodString>;
-        }, $loose>>;
-        diskGB: ZodOptional<ZodObject<    {
-        enabled: ZodOptional<ZodBoolean>;
-        }, $loose>>;
-        }, $loose>>;
-        }, $loose>>;
-        }, $loose>>>;
-        backupEnabled: ZodOptional<ZodBoolean>;
-        pitEnabled: ZodOptional<ZodBoolean>;
-        paused: ZodOptional<ZodBoolean>;
-        terminationProtectionEnabled: ZodOptional<ZodBoolean>;
-        mongoDBMajorVersion: ZodOptional<ZodString>;
-        encryptionAtRestProvider: ZodOptional<ZodEnum<    {
-        NONE: "NONE";
-        AWS: "AWS";
-        AZURE: "AZURE";
-        GCP: "GCP";
+        replicaSetScalingStrategy: z.ZodOptional<z.ZodEnum<{
+            SEQUENTIAL: "SEQUENTIAL";
+            WORKLOAD_TYPE: "WORKLOAD_TYPE";
+            NODE_TYPE: "NODE_TYPE";
         }>>;
-        replicaSetScalingStrategy: ZodOptional<ZodEnum<    {
-        SEQUENTIAL: "SEQUENTIAL";
-        WORKLOAD_TYPE: "WORKLOAD_TYPE";
-        NODE_TYPE: "NODE_TYPE";
-        }>>;
-        tags: ZodOptional<ZodArray<ZodObject<    {
-        key: ZodString;
-        value: ZodString;
-        }, $strip>>>;
-        projectId: ZodString;
-        clusterName: ZodString;
+        tags: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            key: z.ZodString;
+            value: z.ZodString;
+        }, z.core.$strip>>>;
+        projectId: z.ZodString;
+        clusterName: z.ZodString;
     };
     // (undocumented)
     description: string;
