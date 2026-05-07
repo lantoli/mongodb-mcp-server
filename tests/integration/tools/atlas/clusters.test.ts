@@ -162,6 +162,148 @@ describeWithAtlas("clusters", (integration) => {
             });
         });
 
+        describe("atlas-recommend-cluster", () => {
+            it("should have correct metadata", async () => {
+                const { tools } = await integration.mcpClient().listTools();
+                const recommend = tools.find((tool) => tool.name === "atlas-recommend-cluster");
+                expectDefined(recommend);
+                expect(recommend.inputSchema.type).toBe("object");
+                expectDefined(recommend.inputSchema.properties);
+                expect(recommend.inputSchema.properties).toHaveProperty("name");
+                expect(recommend.inputSchema.properties).toHaveProperty("workloadType");
+                expect(recommend.inputSchema.properties).toHaveProperty("regionFailureTolerance");
+            });
+
+            it("recommends a body that satisfies the case_8 ex4 HA constraints", async () => {
+                const response = await integration.mcpClient().callTool({
+                    name: "atlas-recommend-cluster",
+                    arguments: {
+                        name: "ha-test",
+                        workloadType: "production",
+                        expectedPeakConnections: 8000,
+                        durabilityRequirement: "audit-grade",
+                        regionFailureTolerance: 1,
+                    },
+                });
+                const text = getResponseContent(response.content);
+                const parsed = JSON.parse(text) as {
+                    body: {
+                        clusterType?: string;
+                        backupEnabled?: boolean;
+                        replicationSpecs?: Array<{
+                            regionConfigs?: Array<{
+                                priority?: number;
+                                electableSpecs?: { nodeCount?: number; instanceSize?: string };
+                            }>;
+                        }>;
+                    };
+                    decisions: unknown[];
+                    estimatedMonthlyCost: { total: number };
+                };
+                expect(parsed.body.clusterType).toBe("REPLICASET");
+                expect(parsed.body.backupEnabled).toBe(true);
+                const rcs = parsed.body.replicationSpecs![0]!.regionConfigs!;
+                expect(rcs.length).toBeGreaterThanOrEqual(3);
+                const totalElectable = rcs.reduce((s, rc) => s + (rc.electableSpecs?.nodeCount ?? 0), 0);
+                expect(totalElectable).toBeGreaterThanOrEqual(5);
+                expect(rcs[0]!.priority).toBe(7);
+                expect(parsed.decisions.length).toBeGreaterThan(0);
+                expect(parsed.estimatedMonthlyCost.total).toBeGreaterThan(0);
+            });
+        });
+
+        describe("atlas-validate-cluster-body", () => {
+            it("should have correct metadata", async () => {
+                const { tools } = await integration.mcpClient().listTools();
+                const validate = tools.find((tool) => tool.name === "atlas-validate-cluster-body");
+                expectDefined(validate);
+                expect(validate.inputSchema.type).toBe("object");
+                expectDefined(validate.inputSchema.properties);
+                expect(validate.inputSchema.properties).toHaveProperty("body");
+            });
+
+            it("flags multiple priority=7 regions and returns an auto-fixed body", async () => {
+                const response = await integration.mcpClient().callTool({
+                    name: "atlas-validate-cluster-body",
+                    arguments: {
+                        body: {
+                            clusterType: "REPLICASET",
+                            replicationSpecs: [
+                                {
+                                    regionConfigs: [
+                                        {
+                                            providerName: "AWS",
+                                            regionName: "US_EAST_1",
+                                            priority: 7,
+                                            electableSpecs: { instanceSize: "M30", nodeCount: 3 },
+                                        },
+                                        {
+                                            providerName: "AWS",
+                                            regionName: "US_WEST_2",
+                                            priority: 7,
+                                            electableSpecs: { instanceSize: "M30", nodeCount: 2 },
+                                        },
+                                    ],
+                                },
+                            ],
+                            backupEnabled: true,
+                        },
+                    },
+                });
+                const text = getResponseContent(response.content);
+                const parsed = JSON.parse(text) as {
+                    issues: Array<{ field: string }>;
+                    autoFixedBody: {
+                        replicationSpecs?: Array<{ regionConfigs?: Array<{ priority?: number }> }>;
+                    };
+                };
+                expect(parsed.issues.some((i) => i.field.includes("priority"))).toBe(true);
+                const fixedPriorities = parsed.autoFixedBody.replicationSpecs![0]!.regionConfigs!.map(
+                    (rc) => rc.priority
+                );
+                expect(new Set(fixedPriorities).size).toBe(fixedPriorities.length);
+            });
+        });
+
+        describe("atlas-estimate-cluster-cost", () => {
+            it("should have correct metadata", async () => {
+                const { tools } = await integration.mcpClient().listTools();
+                const estimate = tools.find((tool) => tool.name === "atlas-estimate-cluster-cost");
+                expectDefined(estimate);
+                expect(estimate.inputSchema.type).toBe("object");
+                expectDefined(estimate.inputSchema.properties);
+                expect(estimate.inputSchema.properties).toHaveProperty("body");
+            });
+
+            it("estimates cost for an M10 single-region body", async () => {
+                const response = await integration.mcpClient().callTool({
+                    name: "atlas-estimate-cluster-cost",
+                    arguments: {
+                        body: {
+                            replicationSpecs: [
+                                {
+                                    regionConfigs: [
+                                        {
+                                            providerName: "AWS",
+                                            regionName: "US_EAST_1",
+                                            priority: 7,
+                                            electableSpecs: { instanceSize: "M10", nodeCount: 3 },
+                                        },
+                                    ],
+                                },
+                            ],
+                            backupEnabled: false,
+                        },
+                    },
+                });
+                const text = getResponseContent(response.content);
+                const parsed = JSON.parse(text) as { total: number; compute: number; backup: number };
+                expect(parsed.compute).toBeCloseTo(175.2, 1);
+                expect(parsed.backup).toBe(0);
+                expect(parsed.total).toBeCloseTo(175.2, 1);
+            });
+        });
+
         describe("atlas-list-clusters", () => {
             it("should have correct metadata", async () => {
                 const { tools } = await integration.mcpClient().listTools();

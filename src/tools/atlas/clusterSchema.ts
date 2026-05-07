@@ -79,10 +79,7 @@ export const ClusterBodyShape = {
         .describe(
             "Daily snapshot backups. Defaults to false. Set to true for any production cluster (required for PITR audit / disaster recovery)."
         ),
-    pitEnabled: z
-        .boolean()
-        .optional()
-        .describe("Continuous (point-in-time) backups. Requires backupEnabled: true."),
+    pitEnabled: z.boolean().optional().describe("Continuous (point-in-time) backups. Requires backupEnabled: true."),
     paused: z
         .boolean()
         .optional()

@@ -813,6 +813,22 @@ export class DropIndexTool extends MongoDBToolBase {
     static toolName: string;
 }
 
+// @public (undocumented)
+export class EstimateClusterCostTool extends AtlasToolBase {
+    // (undocumented)
+    argsShape: {
+        body: z.ZodRecord<z.ZodString, z.ZodUnknown>;
+    };
+    // (undocumented)
+    description: string;
+    // (undocumented)
+    protected execute(input: ToolArgs<typeof EstimateClusterCostTool.argsShape>): Promise<CallToolResult>;
+    // (undocumented)
+    static operationType: OperationType;
+    // (undocumented)
+    static toolName: string;
+}
+
 // Warning: (ae-forgotten-export) The symbol "ExplainOutputSchema" needs to be exported by the entry point index.d.ts
 //
 // @public (undocumented)
@@ -1321,6 +1337,39 @@ export abstract class MongoDBToolBase extends ToolBase {
 
 // @public
 export type OperationType = "metadata" | "read" | "create" | "delete" | "update" | "connect";
+
+// @public (undocumented)
+export class RecommendClusterTool extends AtlasToolBase {
+    // (undocumented)
+    argsShape: {
+        name: z.ZodString;
+        workloadType: z.ZodEnum<{
+            development: "development";
+            production: "production";
+        }>;
+        expectedPeakConnections: z.ZodOptional<z.ZodNumber>;
+        regionFailureTolerance: z.ZodOptional<z.ZodUnion<readonly [z.ZodLiteral<0>, z.ZodLiteral<1>, z.ZodLiteral<2>]>>;
+        durabilityRequirement: z.ZodOptional<z.ZodEnum<{
+            "best-effort": "best-effort";
+            "audit-grade": "audit-grade";
+        }>>;
+        primaryRegion: z.ZodOptional<z.ZodString>;
+        cloudProvider: z.ZodOptional<z.ZodEnum<{
+            AWS: "AWS";
+            AZURE: "AZURE";
+            GCP: "GCP";
+        }>>;
+        budgetMonthlyUSD: z.ZodOptional<z.ZodNumber>;
+    };
+    // (undocumented)
+    description: string;
+    // (undocumented)
+    protected execute(args: ToolArgs<typeof RecommendClusterTool.argsShape>): Promise<CallToolResult>;
+    // (undocumented)
+    static operationType: OperationType;
+    // (undocumented)
+    static toolName: string;
+}
 
 // Warning: (ae-forgotten-export) The symbol "RenameCollectionOutputSchema" needs to be exported by the entry point index.d.ts
 //
@@ -1926,6 +1975,22 @@ export class UpdateManyTool extends MongoDBToolBase {
         upsertedCount: z.ZodNumber;
         upsertedId: z.ZodOptional<z.ZodString>;
     };
+    // (undocumented)
+    static toolName: string;
+}
+
+// @public (undocumented)
+export class ValidateClusterBodyTool extends AtlasToolBase {
+    // (undocumented)
+    argsShape: {
+        body: z.ZodRecord<z.ZodString, z.ZodUnknown>;
+    };
+    // (undocumented)
+    description: string;
+    // (undocumented)
+    protected execute(input: ToolArgs<typeof ValidateClusterBodyTool.argsShape>): Promise<CallToolResult>;
+    // (undocumented)
+    static operationType: OperationType;
     // (undocumented)
     static toolName: string;
 }

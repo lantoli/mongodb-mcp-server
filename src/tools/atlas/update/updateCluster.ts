@@ -1,9 +1,12 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import type { ClusterDescription20240805 } from "../../../common/atlas/openapi.js";
 import { type ToolArgs, type OperationType } from "../../tool.js";
 import { AtlasToolBase } from "../atlasTool.js";
 import { AtlasArgs } from "../../args.js";
 import { ClusterBodyShape } from "../clusterSchema.js";
 import { ApiClientError } from "../../../common/atlas/apiClientError.js";
+import type { AdvisoryEnvelope, Decision } from "../shared/advisoryResult.js";
+import { estimateClusterCost } from "../shared/clusterCostModel.js";
 
 export class UpdateClusterTool extends AtlasToolBase {
     static toolName = "atlas-update-cluster";
@@ -36,6 +39,26 @@ export class UpdateClusterTool extends AtlasToolBase {
         if ("paused" in body) {
             const otherKeys = Object.keys(body).filter((k) => k !== "paused");
             if (otherKeys.length > 0) {
+                const rejectionEnvelope: AdvisoryEnvelope = {
+                    decisions: [
+                        {
+                            field: "paused",
+                            chose: "rejected",
+                            because: `Atlas rejects bodies that combine 'paused' with other config fields. Conflicting keys: ${otherKeys.join(", ")}.`,
+                        },
+                    ],
+                    warnings: [],
+                    issues: [
+                        {
+                            level: "error",
+                            field: "body",
+                            current: Object.keys(body),
+                            suggested: ["paused"],
+                            because:
+                                "Pause/resume must be sent alone. Send config changes in a separate atlas-update-cluster call.",
+                        },
+                    ],
+                };
                 return {
                     content: [
                         {
@@ -43,9 +66,10 @@ export class UpdateClusterTool extends AtlasToolBase {
                             text:
                                 `Atlas rejects updates that combine 'paused' with other config fields. ` +
                                 `Got extra fields: ${otherKeys.join(", ")}. ` +
-                                `Send ONLY { projectId, clusterName, paused: ${String(body.paused)} } to pause/resume; ` +
+                                `Send ONLY { projectId, clusterName, paused: ${body.paused === true ? "true" : "false"} } to pause/resume; ` +
                                 `if you also need to change config, do that in a separate atlas-update-cluster call.`,
                         },
+                        { type: "text", text: JSON.stringify(rejectionEnvelope, null, 2) },
                     ],
                     isError: true,
                 };
@@ -55,13 +79,29 @@ export class UpdateClusterTool extends AtlasToolBase {
             params: { path: { groupId: projectId, clusterName } },
             body,
         });
+        const decisions: Decision[] = [];
+        let costEstimate;
+        if ("replicationSpecs" in body) {
+            costEstimate = estimateClusterCost(updated);
+            decisions.push({
+                field: "estimatedMonthlyCost",
+                chose: costEstimate.total,
+                because: "computed from updated replicationSpecs",
+            });
+        }
+        const envelope: AdvisoryEnvelope<ClusterDescription20240805> = {
+            body: updated,
+            decisions,
+            warnings: [],
+            estimatedMonthlyCost: costEstimate,
+        };
         return {
             content: [
                 {
                     type: "text",
                     text: `Cluster "${clusterName}" update requested (state: ${updated.stateName ?? "UPDATING"}, paused: ${updated.paused ?? false}).`,
                 },
-                { type: "text", text: JSON.stringify(updated, null, 2) },
+                { type: "text", text: JSON.stringify(envelope, null, 2) },
             ],
         };
     }

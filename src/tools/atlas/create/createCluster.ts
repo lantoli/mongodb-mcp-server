@@ -5,6 +5,9 @@ import type { ClusterDescription20240805 } from "../../../common/atlas/openapi.j
 import { ensureCurrentIpInAccessList } from "../../../common/atlas/accessListUtils.js";
 import { AtlasArgs } from "../../args.js";
 import { ClusterBodyShape } from "../clusterSchema.js";
+import type { AdvisoryEnvelope, Decision } from "../shared/advisoryResult.js";
+import { estimateClusterCost } from "../shared/clusterCostModel.js";
+import { validateClusterBody } from "../shared/clusterValidator.js";
 
 const HA_EXAMPLE = `Multi-region HA example (1 replicationSpec, 3 regionConfigs, 7 electable nodes total):
 {
@@ -64,8 +67,16 @@ function maxInstanceTier(replicationSpecs: unknown): number {
         const regionConfigs = (spec as { regionConfigs?: unknown[] })?.regionConfigs;
         if (!Array.isArray(regionConfigs)) continue;
         for (const rc of regionConfigs) {
-            const r = rc as { electableSpecs?: { instanceSize?: string }; readOnlySpecs?: { instanceSize?: string }; analyticsSpecs?: { instanceSize?: string } };
-            for (const size of [r.electableSpecs?.instanceSize, r.readOnlySpecs?.instanceSize, r.analyticsSpecs?.instanceSize]) {
+            const r = rc as {
+                electableSpecs?: { instanceSize?: string };
+                readOnlySpecs?: { instanceSize?: string };
+                analyticsSpecs?: { instanceSize?: string };
+            };
+            for (const size of [
+                r.electableSpecs?.instanceSize,
+                r.readOnlySpecs?.instanceSize,
+                r.analyticsSpecs?.instanceSize,
+            ]) {
                 if (typeof size !== "string" || !size.startsWith("M")) continue;
                 const n = parseInt(size.slice(1), 10);
                 if (Number.isFinite(n) && n > max) max = n;
@@ -104,32 +115,49 @@ export class CreateClusterTool extends AtlasToolBase {
 
     protected async execute(args: ToolArgs<typeof this.argsShape>): Promise<CallToolResult> {
         const { projectId, ...body } = args;
+        const decisions: Decision[] = [];
         if (!body.replicationSpecs || body.replicationSpecs.length === 0) {
-            const defaults = body.clusterType === "SHARDED" ? DEFAULT_SHARDED_SPECS : DEFAULT_REPLICA_SET_SPECS;
+            const useSharded = body.clusterType === "SHARDED";
+            const defaults = useSharded ? DEFAULT_SHARDED_SPECS : DEFAULT_REPLICA_SET_SPECS;
             body.replicationSpecs = defaults as unknown as typeof body.replicationSpecs;
+            decisions.push({
+                field: "replicationSpecs",
+                chose: useSharded ? "2x M30 sharded default" : "single AWS US_EAST_1 M10 dev default",
+                because: `replicationSpecs omitted; applied ${useSharded ? "SHARDED" : "REPLICASET"} dev-only default. Override with explicit replicationSpecs for production sizing.`,
+            });
         }
         // Production-aware default: when the chosen sizing is M30+, treat as production
         // and enable backups by default. The agent can still set backupEnabled: false explicitly.
-        let backupAutoEnabled = false;
         if (body.backupEnabled === undefined && maxInstanceTier(body.replicationSpecs) >= 30) {
             body.backupEnabled = true;
-            backupAutoEnabled = true;
+            decisions.push({
+                field: "backupEnabled",
+                chose: true,
+                because: "auto-enabled because chosen instance tier is M30+; pass backupEnabled: false to override.",
+            });
         }
         await ensureCurrentIpInAccessList(this.apiClient, projectId);
         const cluster = await this.apiClient.createCluster({
             params: { path: { groupId: projectId } },
             body: body as unknown as ClusterDescription20240805,
         });
-        const note = backupAutoEnabled
-            ? ` (backupEnabled auto-set to true based on M30+ sizing; pass backupEnabled: false explicitly to override)`
-            : "";
+
+        const validation = validateClusterBody(body as unknown as ClusterDescription20240805);
+        const envelope: AdvisoryEnvelope<ClusterDescription20240805> = {
+            body: cluster,
+            decisions,
+            warnings: validation.issues.map((i) => `${i.level}: ${i.field}: ${i.because}`),
+            estimatedMonthlyCost: estimateClusterCost(body as unknown as ClusterDescription20240805),
+            issues: validation.issues,
+        };
+
         return {
             content: [
                 {
                     type: "text",
-                    text: `Cluster "${body.name ?? cluster.name ?? ""}" creation requested in project ${projectId}.${note}`,
+                    text: `Cluster "${body.name ?? cluster.name ?? ""}" creation requested in project ${projectId}.`,
                 },
-                { type: "text", text: JSON.stringify(cluster, null, 2) },
+                { type: "text", text: JSON.stringify(envelope, null, 2) },
             ],
         };
     }
