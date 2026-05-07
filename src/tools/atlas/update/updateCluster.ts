@@ -31,6 +31,26 @@ export class UpdateClusterTool extends AtlasToolBase {
         delete (rest as { name?: string }).name;
         // Drop undefined keys so the PATCH body contains only fields the agent set.
         const body = Object.fromEntries(Object.entries(rest).filter(([, v]) => v !== undefined));
+        // Atlas rejects updates that combine `paused` with any other config field.
+        // Catch this client-side to give the agent an actionable error instead of an opaque 4xx.
+        if ("paused" in body) {
+            const otherKeys = Object.keys(body).filter((k) => k !== "paused");
+            if (otherKeys.length > 0) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text:
+                                `Atlas rejects updates that combine 'paused' with other config fields. ` +
+                                `Got extra fields: ${otherKeys.join(", ")}. ` +
+                                `Send ONLY { projectId, clusterName, paused: ${String(body.paused)} } to pause/resume; ` +
+                                `if you also need to change config, do that in a separate atlas-update-cluster call.`,
+                        },
+                    ],
+                    isError: true,
+                };
+            }
+        }
         const updated = await this.apiClient.updateCluster({
             params: { path: { groupId: projectId, clusterName } },
             body,

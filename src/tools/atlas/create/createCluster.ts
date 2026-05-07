@@ -55,6 +55,26 @@ function buildShard(instanceSize: string, minInstanceSize: string, maxInstanceSi
 const DEFAULT_REPLICA_SET_SPECS = [buildShard("M10", "M10", "M40")];
 const DEFAULT_SHARDED_SPECS = [buildShard("M30", "M30", "M60"), buildShard("M30", "M30", "M60")];
 
+// Detects the largest electable/readonly/analytics tier in a body, e.g. "M30" -> 30.
+// Used to auto-enable backups when the agent has clearly chosen a production sizing.
+function maxInstanceTier(replicationSpecs: unknown): number {
+    let max = 0;
+    if (!Array.isArray(replicationSpecs)) return 0;
+    for (const spec of replicationSpecs) {
+        const regionConfigs = (spec as { regionConfigs?: unknown[] })?.regionConfigs;
+        if (!Array.isArray(regionConfigs)) continue;
+        for (const rc of regionConfigs) {
+            const r = rc as { electableSpecs?: { instanceSize?: string }; readOnlySpecs?: { instanceSize?: string }; analyticsSpecs?: { instanceSize?: string } };
+            for (const size of [r.electableSpecs?.instanceSize, r.readOnlySpecs?.instanceSize, r.analyticsSpecs?.instanceSize]) {
+                if (typeof size !== "string" || !size.startsWith("M")) continue;
+                const n = parseInt(size.slice(1), 10);
+                if (Number.isFinite(n) && n > max) max = n;
+            }
+        }
+    }
+    return max;
+}
+
 export class CreateClusterTool extends AtlasToolBase {
     static toolName = "atlas-create-cluster";
     public description =
@@ -88,16 +108,26 @@ export class CreateClusterTool extends AtlasToolBase {
             const defaults = body.clusterType === "SHARDED" ? DEFAULT_SHARDED_SPECS : DEFAULT_REPLICA_SET_SPECS;
             body.replicationSpecs = defaults as unknown as typeof body.replicationSpecs;
         }
+        // Production-aware default: when the chosen sizing is M30+, treat as production
+        // and enable backups by default. The agent can still set backupEnabled: false explicitly.
+        let backupAutoEnabled = false;
+        if (body.backupEnabled === undefined && maxInstanceTier(body.replicationSpecs) >= 30) {
+            body.backupEnabled = true;
+            backupAutoEnabled = true;
+        }
         await ensureCurrentIpInAccessList(this.apiClient, projectId);
         const cluster = await this.apiClient.createCluster({
             params: { path: { groupId: projectId } },
             body: body as unknown as ClusterDescription20240805,
         });
+        const note = backupAutoEnabled
+            ? ` (backupEnabled auto-set to true based on M30+ sizing; pass backupEnabled: false explicitly to override)`
+            : "";
         return {
             content: [
                 {
                     type: "text",
-                    text: `Cluster "${body.name ?? cluster.name ?? ""}" creation requested in project ${projectId}.`,
+                    text: `Cluster "${body.name ?? cluster.name ?? ""}" creation requested in project ${projectId}.${note}`,
                 },
                 { type: "text", text: JSON.stringify(cluster, null, 2) },
             ],
