@@ -464,6 +464,10 @@ export abstract class TransportRunnerBase<
             collisions or even-count electable quorums. Use atlas-validate-cluster-body to lint a
             hand-built body and atlas-estimate-cluster-cost to compare configs before committing.
 
+            IMPORTANT tier rule: M10/M20 are development-only tiers. Any production cluster — including
+            "budget" or "low-cost" production — requires M30 as the minimum instanceSize. Choosing M10
+            for a production workload will fail Atlas validation.
+
             Pause/resume: send ONLY { projectId, clusterName, paused } to atlas-update-cluster; combining
             paused with other config fields is rejected by Atlas. Cluster must be IDLE before pausing,
             so call atlas-get-cluster and check stateName first.`;

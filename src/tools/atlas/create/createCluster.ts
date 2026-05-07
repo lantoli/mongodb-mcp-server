@@ -89,10 +89,14 @@ function maxInstanceTier(replicationSpecs: unknown): number {
 export class CreateClusterTool extends AtlasToolBase {
     static toolName = "atlas-create-cluster";
     public description =
-        "Create a MongoDB Atlas cluster. The body mirrors the Atlas API ClusterDescription schema. " +
+        "Create a MongoDB Atlas cluster. The body mirrors the Atlas API ClusterDescription schema.\n\n" +
+        "CRITICAL TIER RULE — read before choosing instanceSize:\n" +
+        "  • Development clusters: M10 or M20.\n" +
+        "  • Production clusters: M30 minimum — NO EXCEPTIONS. A 'budget' or 'low-cost' production cluster is still M30+. " +
+        "M10/M20 are physically incapable of production workloads (Atlas rejects backups, dedicated IOPS, and SLA guarantees below M30). " +
+        "If you choose M10 for a production workload the cluster will be rejected by downstream validation.\n\n" +
         "Pass replicationSpecs[] explicitly for any non-trivial sizing; the defaults below are dev-only. " +
-        "Sizing rules: dev = M10/M20 (cheapest with autoscaling). Production = M30+. Always set " +
-        "electableSpecs.nodeCount: 3 on the primary region; total electable count across regions must be odd (3, 5, 7) for replica-set quorum. " +
+        "Always set electableSpecs.nodeCount: 3 on the primary region; total electable count across regions must be odd (3, 5, 7) for replica-set quorum. " +
         "priority: use 7 on the PRIMARY region ONLY; secondary regions need lower distinct values (6, 5, ...). " +
         "Single-region: 1 replicationSpec with 1 regionConfig. " +
         "Multi-region HA: 1 replicationSpec with 3+ regionConfigs, electable nodes in EACH region (>=5 total). " +
