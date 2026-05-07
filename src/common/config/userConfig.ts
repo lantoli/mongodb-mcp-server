@@ -73,7 +73,7 @@ const ServerConfigSchema = z.object({
         .register(configRegistry, { overrideBehavior: onlyStricterLogLevelOverride(MCP_LOG_LEVELS) }),
     disabledTools: z
         .preprocess((val: string | string[] | undefined) => commaSeparatedToArray(val), z.array(z.string()))
-        .default([])
+        .default(["atlas-create-free-cluster"])
         .describe("An array of tool names, operation types, and/or categories of tools that will be disabled.")
         .register(configRegistry, { overrideBehavior: "merge" }),
     confirmationRequiredTools: z

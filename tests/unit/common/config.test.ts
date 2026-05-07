@@ -22,7 +22,7 @@ const expectedDefaults = {
     exportsPath: getExportsPath(),
     exportTimeoutMs: 5 * 60 * 1000, // 5 minutes
     exportCleanupIntervalMs: 2 * 60 * 1000, // 2 minutes
-    disabledTools: [],
+    disabledTools: ["atlas-create-free-cluster"],
     telemetry: "enabled",
     readOnly: false,
     indexCheck: false,

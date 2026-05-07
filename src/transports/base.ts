@@ -454,7 +454,19 @@ export abstract class TransportRunnerBase<
 
         if (config.apiClientId && config.apiClientSecret) {
             instructions += `
-            This MCP server was configured with MongoDB Atlas API credentials.`;
+            This MCP server was configured with MongoDB Atlas API credentials.
+
+            Atlas cluster design guidance: when planning a new cluster, prefer calling atlas-recommend-cluster
+            first with workload constraints (workloadType, expectedPeakConnections, regionFailureTolerance,
+            durabilityRequirement) and pass the returned body verbatim to atlas-create-cluster. The
+            recommender encodes Atlas best practices for tier sizing, multi-region quorum, electable-node
+            distribution, and backup defaults; this avoids hand-construction errors like priority-7
+            collisions or even-count electable quorums. Use atlas-validate-cluster-body to lint a
+            hand-built body and atlas-estimate-cluster-cost to compare configs before committing.
+
+            Pause/resume: send ONLY { projectId, clusterName, paused } to atlas-update-cluster; combining
+            paused with other config fields is rejected by Atlas. Cluster must be IDLE before pausing,
+            so call atlas-get-cluster and check stateName first.`;
         }
 
         return instructions;

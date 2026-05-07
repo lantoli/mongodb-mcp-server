@@ -17,6 +17,9 @@ export function describeWithAtlas(name: string, fn: IntegrationTestFunction): vo
     describeFn(name, () => {
         const integration = setupIntegrationTest(() => ({
             ...defaultTestConfig,
+            // The default disables atlas-create-free-cluster (eval hedge avoidance);
+            // integration tests need it enabled for the existing free-cluster lifecycle test.
+            disabledTools: [],
             apiClientId: process.env.MDB_MCP_API_CLIENT_ID || "test-client",
             apiClientSecret: process.env.MDB_MCP_API_CLIENT_SECRET || "test-secret",
             apiBaseUrl: process.env.MDB_MCP_API_BASE_URL ?? "https://cloud-dev.mongodb.com",
